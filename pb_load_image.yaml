@@ -1,0 +1,27 @@
+---
+# This playbook copies Cisco IOS image from TFTP Sever to the switch
+# It also verifies the MD5 hash 
+# MD5 hash from the cisco website needs to be provided for reference.
+# I have tested this on Cat-4510 and Cat-3850 swtitches
+# Please note Cat-4510 uses bootflash, whereas Cat-3850 uses flash.
+# So the command under ios_command task needs to be adjusted accordingly
+
+- name: Copying image to cisco switch
+  hosts: NUQ-1114-ESW-1
+  vars:
+    image_name: cat4500es8-universalk9.SPA.03.08.09.E.152-4.E9.bin
+    image_md5: 452099cd34c5e64472a3d4f44003962a
+    tftp_server: 165.124.189.26
+  tasks:
+    - name: Copying image to cisco switch
+      ios_command:
+        commands:
+          - command: "copy tftp://{{ tftp_server }}/{{ image_name }} bootflash:"
+            prompt: "Destination filename [{{ image_name }}]?"
+            answer: "\r"
+    - name: Verifying image hash
+      ios_command: 
+        commands: "verify /md5 {{ image_name }} {{ image_md5 }}"
+      register: result
+      failed_when: "'Verified' not in result.stdout[0]"
+      changed_when: false
